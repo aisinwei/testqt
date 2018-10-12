@@ -1,12 +1,11 @@
 TARGET = testqt
 QT = quick aglextras qml
 CONFIG += c++11 link_pkgconfig
-PKGCONFIG += qlibwindowmanager qlibhomescreen
+#PKGCONFIG += 
 
-HEADERS += wmhandler.h
+#HEADERS += 
 
-SOURCES += main.cpp \
-	wmhandler.cpp
+SOURCES += main.cpp
 
 RESOURCES += \
     testqt.qrc \
