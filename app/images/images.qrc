@@ -1,0 +1,21 @@
+<RCC>
+    <qresource prefix="/images">
+        <file>SW_Patern_1.bmp</file>
+        <file>SW_Patern_2.bmp</file>
+        <file>SW_Patern_3.bmp</file>
+        <file>Enlarge_button.bmp</file>
+        <file>Direction_Hup.jpeg</file>
+        <file>Direction_Nup.jpeg</file>
+        <file>thum500_t002_0_ip_0175.jpg</file>
+        <file>Shrink_button.bmp</file>
+        <file>1_uturn.png</file>
+        <file>2_sharp_right.png</file>
+        <file>3_right.png</file>
+        <file>4_slight_right.png</file>
+        <file>5_straight.png</file>
+        <file>6_slight_left.png</file>
+        <file>7_left.png</file>
+        <file>8_sharp_left.png</file>
+        <file>Dest_Flag.jpg</file>
+    </qresource>
+</RCC>
