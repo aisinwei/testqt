@@ -30,6 +30,15 @@ ApplicationWindow {
 	
 	Map{
 		id: map
+		property variant markers
+		property variant mapItems
+		property int markerCounter: 0 // counter for total amount of markers. Resets to 0 when number of markers = 0
+		property int currentMarker
+		property int lastX : -1
+		property int lastY : -1
+		property int pressX : -1
+		property int pressY : -1
+		property int jitterThreshold : 30
 		width: 1080
 		height: 1488
 		plugin: Plugin {
@@ -40,54 +49,45 @@ ApplicationWindow {
 		center: QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
 		zoomLevel: 14
 		
-		GeocodeModel {
-			id: geocodeModel
-			plugin: map.plugin
-			onStatusChanged: {
-				if ((status == GeocodeModel.Ready) || (status == GeocodeModel.Error))
-					map.geocodeFinished()
-			}
-			onLocationsChanged:
-			{
-				if (count == 1) {
-					map.center.latitude = get(0).coordinate.latitude
-					map.center.longitude = get(0).coordinate.longitude
-				}
-			}
-		}
-		MapItemView {
-			model: geocodeModel
-			delegate: pointDelegate
-		}
-		Component {
-			id: pointDelegate
-
-			MapCircle {
-				id: point
-				radius: 1000
-				color: "#46a2da"
-				border.color: "#190a33"
-				border.width: 2
-				smooth: true
-				opacity: 0.25
-				center: locationData.coordinate
-			}
-		}
-		function geocode(fromAddress)
-		{
-			// send the geocode request
-			geocodeModel.query = fromAddress
-			geocodeModel.update()
-		}
-		
-	//	PositionSource{
-	//		id: positionSource
-	//		active: true
-	//		onPositionChanged: {
-	//			map.center = positionSource.position.coordinate
+	//	GeocodeModel {
+	//		id: geocodeModel
+	//		plugin: map.plugin
+	//		onStatusChanged: {
+	//			if ((status == GeocodeModel.Ready) || (status == GeocodeModel.Error))
+	//				map.geocodeFinished()
+	//		}
+	//		onLocationsChanged:
+	//		{
+	//			if (count == 1) {
+	//				map.center.latitude = get(0).coordinate.latitude
+	//				map.center.longitude = get(0).coordinate.longitude
+	//			}
 	//		}
 	//	}
-
+	//	MapItemView {
+	//		model: geocodeModel
+	//		delegate: pointDelegate
+	//	}
+	//	Component {
+	//		id: pointDelegate
+	//		MapCircle {
+	//			id: point
+	//			radius: 1000
+	//			color: "#46a2da"
+	//			border.color: "#190a33"
+	//			border.width: 2
+	//			smooth: true
+	//			opacity: 0.25
+	//			center: locationData.coordinate
+	//		}
+	//	}
+	//	function geocode(fromAddress)
+	//	{
+	//		// send the geocode request
+	//		geocodeModel.query = fromAddress
+	//		geocodeModel.update()
+	//	}
+		
 		MapQuickItem {
 			id: poiTheQtComapny
 			sourceItem: Rectangle { width: 14; height: 14; color: "#e41e25"; border.width: 2; border.color: "white"; smooth: true; radius: 7 }
@@ -141,7 +141,7 @@ ApplicationWindow {
 				id: route
 				route: routeData
 				line.color: "#46a2da"
-				line.width: 5
+				line.width: 10
 				smooth: true
 				opacity: 0.8
 			}
@@ -154,28 +154,67 @@ ApplicationWindow {
 		}
 		function calculateCoordinateRoute(startCoordinate, endCoordinate)
 		{
+			console.log("calculateCoordinateRoute")
 			// clear away any old data in the query
 			routeQuery.clearWaypoints();
-
 			// add the start and end coords as waypoints on the route
 			routeQuery.addWaypoint(startCoordinate)
 			routeQuery.addWaypoint(endCoordinate)
 			routeQuery.travelModes = RouteQuery.CarTravel
 			routeQuery.routeOptimizations = RouteQuery.FastestRoute
-
-
 			for (var i=0; i<9; i++) {
 				routeQuery.setFeatureWeight(i, 0)
 			}
-			//for (var i=0; i<routeDialog.features.length; i++) {
-			//	map.routeQuery.setFeatureWeight(routeDialog.features[i], RouteQuery.AvoidFeatureWeight)
-			//}
-
 			routeModel.update();
-
 			// center the map on the start coord
-			map.center = startCoordinate;
+		//	map.center = startCoordinate;
 		}
+		
+		function calculateMarkerRoute()
+		{
+			var startCoordinate = QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
+			
+			console.log("calculateMarkerRoute")
+			routeQuery.clearWaypoints();
+			routeQuery.addWaypoint(startCoordinate)
+			routeQuery.addWaypoint(mouseArea.lastCoordinate)
+			routeQuery.travelModes = RouteQuery.CarTravel
+			routeQuery.routeOptimizations = RouteQuery.FastestRoute
+			for (var i=0; i<9; i++) {
+				routeQuery.setFeatureWeight(i, 0)
+			}
+			routeModel.update();
+		//	map.center = startCoordinate;
+		}
+		MouseArea {
+			id: mouseArea
+			property variant lastCoordinate
+			anchors.fill: parent
+			acceptedButtons: Qt.LeftButton | Qt.RightButton
+			
+			onPressed : {
+				map.lastX = mouse.x
+				map.lastY = mouse.y
+				map.pressX = mouse.x
+				map.pressY = mouse.y
+				lastCoordinate = map.toCoordinate(Qt.point(mouse.x, mouse.y))
+			}
+			
+			onPositionChanged: {
+				if (mouse.button == Qt.LeftButton) {
+					map.lastX = mouse.x
+					map.lastY = mouse.y
+				}
+			}
+			
+			onPressAndHold:{
+				if (Math.abs(map.pressX - mouse.x ) < map.jitterThreshold
+						&& Math.abs(map.pressY - mouse.y ) < map.jitterThreshold) {
+					map.calculateMarkerRoute();
+				}
+			}
+		}
+		
 	}
 	
 	Item {
