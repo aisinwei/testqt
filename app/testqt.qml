@@ -30,10 +30,7 @@ ApplicationWindow {
 	
 	Map{
 		id: map
-		property variant markers
-		property variant mapItems
-		property int markerCounter: 0 // counter for total amount of markers. Resets to 0 when number of markers = 0
-		property int currentMarker
+		property variant routecounter : 0
 		property int lastX : -1
 		property int lastY : -1
 		property int pressX : -1
@@ -98,7 +95,6 @@ ApplicationWindow {
 			opacity: 1.0
 			anchorPoint: Qt.point(sourceItem.width/2, sourceItem.height/2)
 		}
-		
 		MapQuickItem {
 			sourceItem: Text{
 				text: "The Qt Company"
@@ -109,6 +105,18 @@ ApplicationWindow {
 			}
 			coordinate: poiTheQtComapny.coordinate
 			anchorPoint: Qt.point(-poiTheQtComapny.sourceItem.width * 0.5,poiTheQtComapny.sourceItem.height * 1.5)
+		}
+		MapQuickItem {
+			id: marker
+			anchorPoint.x: imageMarker.width/2
+			anchorPoint.y: imageMarker.height/2
+			sourceItem: Image {
+				id: imageMarker
+				width: 150
+				height: 150
+				source: "images/car_icon.svg"
+			}
+			coordinate: QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
 		}
 		
 		RouteModel {
@@ -122,14 +130,19 @@ ApplicationWindow {
 					switch (count) {
 					case 0:
 						// technically not an error
-						map.routeError()
+					//	map.routeError()
 						break
 					case 1:
 					//	map.showRouteList()
+						console.log("1 route found")
+						console.log("path: ", get(0).path.length)
+						for(var i = 0; i < get(0).path.length; i++){
+							console.log("", get(0).path[i])
+						}
 						break
 					}
 				} else if (status == RouteModel.Error) {
-					map.routeError()
+				//	map.routeError()
 				}
 			}
 		}
@@ -140,7 +153,7 @@ ApplicationWindow {
 			MapRoute {
 				id: route
 				route: routeData
-				line.color: "#46a2da"
+				line.color: "#4658da"
 				line.width: 10
 				smooth: true
 				opacity: 0.8
@@ -151,23 +164,6 @@ ApplicationWindow {
 			model: routeModel
 			delegate: routeDelegate
 			autoFitViewport: true
-		}
-		function calculateCoordinateRoute(startCoordinate, endCoordinate)
-		{
-			console.log("calculateCoordinateRoute")
-			// clear away any old data in the query
-			routeQuery.clearWaypoints();
-			// add the start and end coords as waypoints on the route
-			routeQuery.addWaypoint(startCoordinate)
-			routeQuery.addWaypoint(endCoordinate)
-			routeQuery.travelModes = RouteQuery.CarTravel
-			routeQuery.routeOptimizations = RouteQuery.FastestRoute
-			for (var i=0; i<9; i++) {
-				routeQuery.setFeatureWeight(i, 0)
-			}
-			routeModel.update();
-			// center the map on the start coord
-		//	map.center = startCoordinate;
 		}
 		
 		function calculateMarkerRoute()
@@ -215,6 +211,24 @@ ApplicationWindow {
 			}
 		}
 		
+		function updatePositon()
+		{
+			console.log("updatePositon")
+			if(routeModel.status == RouteModel.Ready){
+				if(routecounter < routeModel.get(0).path.length){
+					console.log("path: ", routecounter, "/", routeModel.get(0).path.length, "", routeModel.get(0).path[routecounter])
+					map.center = routeModel.get(0).path[routecounter]
+					marker.coordinate = routeModel.get(0).path[routecounter]
+					routecounter++
+				}else{
+					routecounter = 0
+					map.center = QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
+					marker.coordinate = QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
+				}
+			}else{
+				routecounter = 0
+			}
+		}
 	}
 	
 	Item {
@@ -222,40 +236,29 @@ ApplicationWindow {
 		x: 942
 		y: 1328
 		
+		Timer {
+			id: positionTimer
+			interval: 250; running: false; repeat: true
+			onTriggered: map.updatePositon()
+		}
+		
 		Button {
 			id: btn_present_position_
 			width: 100
 			height: 100
-		
-			property variant fromCoordinate: QtPositioning.coordinate(59.9483, 10.7695)
-			property variant toCoordinate: QtPositioning.coordinate(59.9645, 10.671)
-		
-			Address {
-				id :fromAddress
-				street: "Sandakerveien 116"
-				city: "Oslo"
-				country: "Norway"
-				state : ""
-				postalCode: "0484"
-			}
-
-			Address {
-				id: toAddress
-				street: "Holmenkollveien 140"
-				city: "Oslo"
-				country: "Norway"
-				postalCode: "0791"
-			}
 			
 			function doSomething() {
 			//	map.geocode(fromAddress);
-				map.calculateCoordinateRoute(fromCoordinate, toCoordinate);
+				if(positionTimer.running == false){
+					positionTimer.start();
+				}else{
+					positionTimer.stop();
+				}
 			}
-
 			onClicked: { doSomething() }
-
+			
 			Image {
-				id: image
+				id: imageButton
 				width: 92
 				height: 92
 				anchors.verticalCenter: parent.verticalCenter

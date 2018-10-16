@@ -17,5 +17,6 @@
         <file>7_left.png</file>
         <file>8_sharp_left.png</file>
         <file>Dest_Flag.jpg</file>
+        <file>car_icon.svg</file>
     </qresource>
 </RCC>
