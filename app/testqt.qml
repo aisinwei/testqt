@@ -30,7 +30,8 @@ ApplicationWindow {
 	
 	Map{
 		id: map
-		property variant routecounter : 0
+		property variant pathcounter : 0
+		property variant segmentcounter : 0
 		property int lastX : -1
 		property int lastY : -1
 		property int pressX : -1
@@ -134,11 +135,16 @@ ApplicationWindow {
 						break
 					case 1:
 					//	map.showRouteList()
+						map.pathcounter = 0
+						map.segmentcounter = 0
+						// report position on route and 1st instruction
 						console.log("1 route found")
-						console.log("path: ", get(0).path.length)
+						console.log("path: ", get(0).path.length, "segment: ", get(0).segments.length)
 						for(var i = 0; i < get(0).path.length; i++){
 							console.log("", get(0).path[i])
 						}
+						console.log("1st instruction: ", get(0).segments[map.segmentcounter].maneuver.instructionText)
+						map.segmentcounter++
 						break
 					}
 				} else if (status == RouteModel.Error) {
@@ -215,18 +221,28 @@ ApplicationWindow {
 		{
 			console.log("updatePositon")
 			if(routeModel.status == RouteModel.Ready){
-				if(routecounter < routeModel.get(0).path.length){
-					console.log("path: ", routecounter, "/", routeModel.get(0).path.length, "", routeModel.get(0).path[routecounter])
-					map.center = routeModel.get(0).path[routecounter]
-					marker.coordinate = routeModel.get(0).path[routecounter]
-					routecounter++
+				if(pathcounter < routeModel.get(0).path.length){
+					console.log("path: ", pathcounter, "/", routeModel.get(0).path.length, "", routeModel.get(0).path[pathcounter])
+					map.center = routeModel.get(0).path[pathcounter]
+					marker.coordinate = routeModel.get(0).path[pathcounter]
+					// report a new instruction if current position matches with the head position of the segment
+					if(segmentcounter < routeModel.get(0).segments.length){
+						if(routeModel.get(0).path[pathcounter] == routeModel.get(0).segments[segmentcounter].path[0]){
+							console.log("new segment: ", segmentcounter, "/", routeModel.get(0).segments.length)
+							console.log("instruction: ", routeModel.get(0).segments[segmentcounter].maneuver.instructionText)
+							segmentcounter++
+						}
+					}
+					pathcounter++
 				}else{
-					routecounter = 0
+					pathcounter = 0
+					segmentcounter = 0
 					map.center = QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
 					marker.coordinate = QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
 				}
 			}else{
-				routecounter = 0
+				pathcounter = 0
+				segmentcounter = 0
 			}
 		}
 	}
