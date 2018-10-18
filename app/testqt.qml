@@ -46,45 +46,8 @@ ApplicationWindow {
 		}
 		center: QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
 		zoomLevel: 14
-		
-	//	GeocodeModel {
-	//		id: geocodeModel
-	//		plugin: map.plugin
-	//		onStatusChanged: {
-	//			if ((status == GeocodeModel.Ready) || (status == GeocodeModel.Error))
-	//				map.geocodeFinished()
-	//		}
-	//		onLocationsChanged:
-	//		{
-	//			if (count == 1) {
-	//				map.center.latitude = get(0).coordinate.latitude
-	//				map.center.longitude = get(0).coordinate.longitude
-	//			}
-	//		}
-	//	}
-	//	MapItemView {
-	//		model: geocodeModel
-	//		delegate: pointDelegate
-	//	}
-	//	Component {
-	//		id: pointDelegate
-	//		MapCircle {
-	//			id: point
-	//			radius: 1000
-	//			color: "#46a2da"
-	//			border.color: "#190a33"
-	//			border.width: 2
-	//			smooth: true
-	//			opacity: 0.25
-	//			center: locationData.coordinate
-	//		}
-	//	}
-	//	function geocode(fromAddress)
-	//	{
-	//		// send the geocode request
-	//		geocodeModel.query = fromAddress
-	//		geocodeModel.update()
-	//	}
+		property variant modepositionfollowing : false 
+		property variant currentpostion : QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
 		
 		MapQuickItem {
 			id: poiTheQtComapny
@@ -117,7 +80,7 @@ ApplicationWindow {
 				height: 150
 				source: "images/car_icon.svg"
 			}
-			coordinate: QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
+			coordinate: map.currentpostion
 		}
 		
 		RouteModel {
@@ -134,7 +97,6 @@ ApplicationWindow {
 					//	map.routeError()
 						break
 					case 1:
-					//	map.showRouteList()
 						map.pathcounter = 0
 						map.segmentcounter = 0
 						// report position on route and 1st instruction
@@ -144,7 +106,6 @@ ApplicationWindow {
 							console.log("", get(0).path[i])
 						}
 						console.log("1st instruction: ", get(0).segments[map.segmentcounter].maneuver.instructionText)
-						map.segmentcounter++
 						break
 					}
 				} else if (status == RouteModel.Error) {
@@ -186,7 +147,6 @@ ApplicationWindow {
 				routeQuery.setFeatureWeight(i, 0)
 			}
 			routeModel.update();
-		//	map.center = startCoordinate;
 		}
 		MouseArea {
 			id: mouseArea
@@ -212,9 +172,17 @@ ApplicationWindow {
 			onPressAndHold:{
 				if (Math.abs(map.pressX - mouse.x ) < map.jitterThreshold
 						&& Math.abs(map.pressY - mouse.y ) < map.jitterThreshold) {
+					map.modepositionfollowing = false
+				//	arrow.positionTimer.stop();
 					map.calculateMarkerRoute();
 				}
 			}
+		}
+		gesture.onFlickStarted: {
+			map.modepositionfollowing = false
+		}
+		gesture.onPanStarted: {
+			map.modepositionfollowing = false
 		}
 		
 		function updatePositon()
@@ -223,8 +191,11 @@ ApplicationWindow {
 			if(routeModel.status == RouteModel.Ready){
 				if(pathcounter < routeModel.get(0).path.length){
 					console.log("path: ", pathcounter, "/", routeModel.get(0).path.length, "", routeModel.get(0).path[pathcounter])
-					map.center = routeModel.get(0).path[pathcounter]
-					marker.coordinate = routeModel.get(0).path[pathcounter]
+					map.currentpostion = routeModel.get(0).path[pathcounter]
+					marker.coordinate = map.currentpostion
+					if(map.modepositionfollowing == true){
+						map.center = map.currentpostion
+					}
 					// report a new instruction if current position matches with the head position of the segment
 					if(segmentcounter < routeModel.get(0).segments.length){
 						if(routeModel.get(0).path[pathcounter] == routeModel.get(0).segments[segmentcounter].path[0]){
@@ -237,8 +208,11 @@ ApplicationWindow {
 				}else{
 					pathcounter = 0
 					segmentcounter = 0
-					map.center = QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
-					marker.coordinate = QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
+					map.currentpostion = QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
+					marker.coordinate = map.currentpostion
+					if(map.modepositionfollowing == true){
+						map.center = map.currentpostion
+					}
 				}
 			}else{
 				pathcounter = 0
@@ -247,10 +221,50 @@ ApplicationWindow {
 		}
 	}
 	
+	// use external nmea data to simulate current position
+//	PositionSource {
+//		id: src
+//		updateInterval: 500
+//		active: true
+//		nmeaSource: "images/nmea.txt"
+//		
+//		onPositionChanged: {
+//			var coord = src.position.coordinate;
+//			console.log("Coordinate: ", src.position.coordinate);
+//			map.currentpostion = src.position.coordinate;
+//		}
+//	}
+	
 	Item {
-		id: btn_present_position
+		id: present_position
 		x: 942
 		y: 1328
+		
+		Button {
+			id: btn_present_position
+			width: 100
+			height: 100
+			
+			function present_position_clicked() {
+				map.modepositionfollowing = true
+				map.center = map.currentpostion
+			}
+			onClicked: { present_position_clicked() }
+			
+			Image {
+				id: image_present_position
+				width: 92
+				height: 92
+				anchors.verticalCenter: parent.verticalCenter
+				anchors.horizontalCenter: parent.horizontalCenter
+				source: "images/thum500_t002_0_ip_0175.jpg"
+			}
+		}
+	}
+	Item {
+		id: arrow
+		x: 940
+		y: 20
 		
 		Timer {
 			id: positionTimer
@@ -259,27 +273,29 @@ ApplicationWindow {
 		}
 		
 		Button {
-			id: btn_present_position_
+			id: btn_arrow
 			width: 100
 			height: 100
 			
-			function doSomething() {
-			//	map.geocode(fromAddress);
+			function arrow_clicked() {
 				if(positionTimer.running == false){
+					map.modepositionfollowing = true
 					positionTimer.start();
 				}else{
+					map.modepositionfollowing = false
 					positionTimer.stop();
 				}
 			}
-			onClicked: { doSomething() }
+			
+			onClicked: { arrow_clicked() }
 			
 			Image {
-				id: imageButton
+				id: image_arrow
 				width: 92
 				height: 92
 				anchors.verticalCenter: parent.verticalCenter
 				anchors.horizontalCenter: parent.horizontalCenter
-				source: "images/thum500_t002_0_ip_0175.jpg"
+				source: "images/SW_Patern_1.bmp"
 			}
 		}
 	}
@@ -289,31 +305,21 @@ ApplicationWindow {
 		x: 15
 		y: 20
 	}
-
-	BtnArrow {
-		id: btn_arrow
-		x: 940
-		y: 20
-	}
-
 	BtnShrink {
 		id: btn_shrink
 		x: 23
 		y:1200
 	}
-
 	BtnEnlarge {
 		id: btn_enlarge
 		x: 23
 		y: 1330
 	}
-
 	ImgDestinationDirection {
 		id: img_destination_direction
 		x: 120
 		y: 20
 	}
-
 	ProgressNextCross {
 		id: progress_next_cross
 		x: 225

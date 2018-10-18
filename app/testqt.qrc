@@ -2,7 +2,6 @@
 	<qresource prefix="/">
 		<file>testqt.qml</file>
 		<file>BtnMapDirection.qml</file>
-		<file>BtnArrow.qml</file>
 		<file>BtnShrink.qml</file>
 		<file>BtnEnlarge.qml</file>
 		<file>ImgDestinationDirection.qml</file>
