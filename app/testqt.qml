@@ -44,31 +44,31 @@ ApplicationWindow {
 			PluginParameter { name: "mapbox.access_token";
 			value: "pk.eyJ1IjoiYWlzaW53ZWkiLCJhIjoiY2pqNWg2cG81MGJoazNxcWhldGZzaDEwYyJ9.imkG45PQUKpgJdhO2OeADQ" }
 		}
-		center: QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
+		center: QtPositioning.coordinate(36.131516, -115.151507)	// Las Vegas Convention Center
 		zoomLevel: 14
 		property variant modepositionfollowing : false 
-		property variant currentpostion : QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
+		property variant currentpostion : QtPositioning.coordinate(36.131516, -115.151507)	// Las Vegas Convention Center
 		
 		MapQuickItem {
-			id: poiTheQtComapny
+			id: poi
 			sourceItem: Rectangle { width: 14; height: 14; color: "#e41e25"; border.width: 2; border.color: "white"; smooth: true; radius: 7 }
 			coordinate {
-				latitude: 59.9485
-				longitude: 10.7686
+				latitude: 36.131516
+				longitude: -115.151507
 			}
 			opacity: 1.0
 			anchorPoint: Qt.point(sourceItem.width/2, sourceItem.height/2)
 		}
 		MapQuickItem {
 			sourceItem: Text{
-				text: "The Qt Company"
+				text: "Convention Center"
 				color:"#242424"
 				font.bold: true
 				styleColor: "#ECECEC"
 				style: Text.Outline
 			}
-			coordinate: poiTheQtComapny.coordinate
-			anchorPoint: Qt.point(-poiTheQtComapny.sourceItem.width * 0.5,poiTheQtComapny.sourceItem.height * 1.5)
+			coordinate: poi.coordinate
+			anchorPoint: Qt.point(-poi.sourceItem.width * 0.5, poi.sourceItem.height * 1.5)
 		}
 		MapQuickItem {
 			id: marker
@@ -93,23 +93,24 @@ ApplicationWindow {
 				if (status == RouteModel.Ready) {
 					switch (count) {
 					case 0:
-						// technically not an error
-					//	map.routeError()
+						console.log("No route found")
 						break
 					case 1:
 						map.pathcounter = 0
 						map.segmentcounter = 0
 						// report position on route and 1st instruction
 						console.log("1 route found")
-						console.log("path: ", get(0).path.length, "segment: ", get(0).segments.length)
+						console.log("path: ", get(0).path.length, "segment: ", get(0).segments.length, "distance: ", get(0).segments.distance)
 						for(var i = 0; i < get(0).path.length; i++){
-							console.log("", get(0).path[i])
+						//	console.log("", get(0).path[i])
 						}
 						console.log("1st instruction: ", get(0).segments[map.segmentcounter].maneuver.instructionText)
+						console.log("direction: ", get(0).segments[map.segmentcounter].maneuver.direction)
+						console.log("distanceToNextInstruction: ", get(0).segments[map.segmentcounter].maneuver.distanceToNextInstruction)
 						break
 					}
 				} else if (status == RouteModel.Error) {
-				//	map.routeError()
+					console.log("route status error")
 				}
 			}
 		}
@@ -135,7 +136,7 @@ ApplicationWindow {
 		
 		function calculateMarkerRoute()
 		{
-			var startCoordinate = QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
+			var startCoordinate = QtPositioning.coordinate(36.131516, -115.151507)	// Las Vegas Convention Center
 			
 			console.log("calculateMarkerRoute")
 			routeQuery.clearWaypoints();
@@ -190,7 +191,7 @@ ApplicationWindow {
 			console.log("updatePositon")
 			if(routeModel.status == RouteModel.Ready){
 				if(pathcounter < routeModel.get(0).path.length){
-					console.log("path: ", pathcounter, "/", routeModel.get(0).path.length, "", routeModel.get(0).path[pathcounter])
+				//	console.log("path: ", pathcounter, "/", routeModel.get(0).path.length, "", routeModel.get(0).path[pathcounter])
 					map.currentpostion = routeModel.get(0).path[pathcounter]
 					marker.coordinate = map.currentpostion
 					if(map.modepositionfollowing == true){
@@ -201,6 +202,8 @@ ApplicationWindow {
 						if(routeModel.get(0).path[pathcounter] == routeModel.get(0).segments[segmentcounter].path[0]){
 							console.log("new segment: ", segmentcounter, "/", routeModel.get(0).segments.length)
 							console.log("instruction: ", routeModel.get(0).segments[segmentcounter].maneuver.instructionText)
+							console.log("direction: ", routeModel.get(0).segments[map.segmentcounter].maneuver.direction)
+							console.log("distanceToNextInstruction: ", routeModel.get(0).segments[map.segmentcounter].maneuver.distanceToNextInstruction)
 							segmentcounter++
 						}
 					}
@@ -208,7 +211,7 @@ ApplicationWindow {
 				}else{
 					pathcounter = 0
 					segmentcounter = 0
-					map.currentpostion = QtPositioning.coordinate(59.9485, 10.7686)	// The Qt Company in Oslo
+					map.currentpostion = QtPositioning.coordinate(36.131516, -115.151507)	// Las Vegas Convention Center
 					marker.coordinate = map.currentpostion
 					if(map.modepositionfollowing == true){
 						map.center = map.currentpostion
